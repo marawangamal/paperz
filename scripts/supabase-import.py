@@ -106,14 +106,26 @@ class SupabaseImporter:
                 try:
                     # Prepare batch data with venue_ids
                     batch_data = []
+                    seen_keys = set()  # Track unique combinations of venue_id and title
+                    
                     for paper in batch:
-                        venue_key = (paper['venue_abbrev'], int(paper['venue_year']))  # Convert to int here
+                        venue_key = (paper['venue_abbrev'], int(paper['venue_year']))
                         venue_id = venue_mapping.get(venue_key)
                         
                         if not venue_id:
                             print(f"\nVenue not found for paper: {paper['title']}")
                             continue
                         
+                        # Create a normalized title (assuming you have a function for this)
+                        normalized_title = paper['title']
+                        
+                        # Check for duplicates within the batch
+                        unique_key = (venue_id, normalized_title)
+                        if unique_key in seen_keys:
+                            print(f"\nDuplicate paper found: {paper['title']}")
+                            continue
+                        
+                        seen_keys.add(unique_key)
                         batch_data.append({
                             'title': paper['title'],
                             'authors': paper['authors'],
@@ -134,8 +146,8 @@ class SupabaseImporter:
                     
                 except Exception as e:
                     print(f"\nError importing paper batch: {str(e)}")
-        
-        print(f"Imported {len(papers)} papers")
+            
+            print(f"Imported {len(papers)} papers")
 
     def import_all(self) -> None:
         """Import all data to Supabase"""
@@ -150,8 +162,8 @@ if __name__ == "__main__":
     script_dir = Path(__file__).parent
     root_dir = script_dir.parent
     
-    venues_path = root_dir / "dumps/neurips/venues.csv"
-    papers_path = root_dir / "dumps/neurips/papers.csv"
+    venues_path = root_dir / "dumps/icml/venues.csv"
+    papers_path = root_dir / "dumps/icml/papers.csv"
     
     importer = SupabaseImporter(
         venues_path=venues_path,
